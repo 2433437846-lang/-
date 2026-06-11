@@ -1,0 +1,576 @@
+PS D:\py\mypython\deepstudy> D:/anaconda/benti/Scripts/activate
+PS D:\py\mypython\deepstudy> conda activate VS
+PS D:\py\mypython\deepstudy> & D:/anaconda/benti/envs/VS/python.exe d:/py/mypython/deepstudy/deepstudy-last/main.py
+======================================================================
+  深度学习期末综合实践 - 方向二
+  融合LSTM与Transformer/BERT的RTX 4060加速序列系统
+======================================================================
+
+  设备: cuda (NVIDIA GeForce RTX 4060 Laptop GPU)
+  CUDA版本: 12.8
+  PyTorch版本: 2.11.0+cu128
+  GPU显存: 8.0 GB
+
+▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶
+  阶段①：数据准备
+▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶
+============================================================
+模块1：数据加载与清洗
+============================================================
+
+[1.1] 原始数据: 10178 条
+  列名: ['names', 'date_x', 'score', 'genre', 'overview', 'crew', 'orig_title', 'status', 'orig_lang', 'budget_x', 'revenue', 'country']
+  去除空overview后: 10178 条
+  文本清洗后: 10178 条
+
+[1.2] 标签构建 (score >= 70 → 正面)
+  正面样本: 3295 (32.4%)
+  负面样本: 6883 (67.6%)
+
+[1.3] 文本长度统计（词数）
+  平均: 48.0, 中位数: 42
+  最短: 2, 最长: 186
+
+[1.4] 数据划分 (Train/Val/Test)
+  训练集: 7124 (70.0%)
+  验证集: 1526 (15.0%)
+  测试集: 1528 (15.0%)
+  训练集: 正面=2306, 负面=4818
+  验证集: 正面=494, 负面=1032
+  测试集: 正面=495, 负面=1033
+  类别分布图已保存: d:\py\mypython\deepstudy\deepstudy-last\outputs\class_distribution.png
+
+============================================================
+模块2A：LSTM数据准备
+============================================================
+
+[2A.1] 构建词表
+  原始词汇总数: 25638
+  最终词表大小: 10038
+
+[2A.2] 构建Dataset (max_len=256)
+
+[2A.3] DataLoader验证
+  input shape: torch.Size([64, 133])
+  length shape: torch.Size([64])
+  label shape: torch.Size([64])
+
+============================================================
+模块2B：BERT数据准备
+============================================================
+
+[2B.1] 加载Tokenizer: bert-base-uncased
+  词表大小: 30522
+
+[2B.2] 构建Dataset (max_length=128)
+
+[2B.3] DataLoader验证
+  input_ids shape: torch.Size([32, 128])
+  attention_mask shape: torch.Size([32, 128])
+  label shape: torch.Size([32])
+
+▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶
+  阶段②：模型构建
+▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶
+
+[模型] Bi-LSTM 结构
+  总参数量: 3,784,194
+  可训练参数量: 3,784,194
+  模型大小: 14.44 MB (FP32)
+
+[模型] 加载 BERT: bert-base-uncased
+Loading weights: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 199/199 [00:00<00:00, 6476.81it/s]
+[transformers] BertForSequenceClassification LOAD REPORT from: bert-base-uncased
+Key                                        | Status     | 
+-------------------------------------------+------------+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED | 
+cls.predictions.bias                       | UNEXPECTED | 
+cls.seq_relationship.bias                  | UNEXPECTED | 
+cls.predictions.transform.dense.bias       | UNEXPECTED | 
+cls.predictions.transform.dense.weight     | UNEXPECTED | 
+cls.seq_relationship.weight                | UNEXPECTED | 
+classifier.bias                            | MISSING    | 
+classifier.weight                          | MISSING    | 
+
+Notes:
+- UNEXPECTED:   can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:      those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+  总参数量: 109,483,778
+  可训练参数量: 109,483,778
+  模型大小: 417.65 MB (FP32)
+  隐藏层维度: 768
+  注意力头数: 12
+  Transformer层数: 12
+
+▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶
+  阶段③：模型训练（FP32）
+▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶
+
+============================================================
+模块3A：Bi-LSTM 训练
+============================================================
+  TensorBoard日志: d:\py\mypython\deepstudy\deepstudy-last\runs\lstm_20260607_143437
+
+  训练轮数: 15
+  批大小: 64
+  学习率: 0.001
+  优化器: AdamW
+  设备: cuda (NVIDIA GeForce RTX 4060 Laptop GPU)
+  Epoch  1/15 | Train Loss: 0.6330 Acc: 67.11% | Val Loss: 0.6174 Acc: 67.82% | Time: 6.9s
+  Epoch  2/15 | Train Loss: 0.6225 Acc: 67.80% | Val Loss: 0.6283 Acc: 67.56% | Time: 5.5s
+  Epoch  3/15 | Train Loss: 0.6157 Acc: 67.45% | Val Loss: 0.6192 Acc: 67.82% | Time: 4.9s
+  Epoch  4/15 | Train Loss: 0.5860 Acc: 69.57% | Val Loss: 0.6133 Acc: 67.63% | Time: 4.9s
+  早停于 Epoch 4
+
+  GPU显存峰值: 264.6 MB
+
+  训练完成！最佳验证准确率: 67.82%
+  总训练时间: 22.2s
+
+============================================================
+模块3B：BERT Transformer 训练
+============================================================
+  TensorBoard日志: d:\py\mypython\deepstudy\deepstudy-last\runs\bert_20260607_143502
+
+  训练轮数: 3
+  批大小: 32
+  学习率: 2e-05
+  Warmup步数: 66/669
+  设备: cuda (NVIDIA GeForce RTX 4060 Laptop GPU)
+  Epoch  1/3 | Train Loss: 0.6124 Acc: 68.01% | Val Loss: 0.5727 Acc: 70.31% | Time: 74.2s
+  Epoch  2/3 | Train Loss: 0.5380 Acc: 73.58% | Val Loss: 0.6085 Acc: 66.71% | Time: 74.3s
+  Epoch  3/3 | Train Loss: 0.4271 Acc: 81.74% | Val Loss: 0.5937 Acc: 70.45% | Time: 74.3s
+
+  训练完成！最佳验证准确率: 70.45%
+  总训练时间: 222.9s
+
+▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶
+  阶段③续：AMP混合精度训练对比
+▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶
+
+--- Bi-LSTM AMP vs FP32 ---
+
+============================================================
+模块3A：Bi-LSTM 训练
+============================================================
+  TensorBoard日志: d:\py\mypython\deepstudy\deepstudy-last\runs\lstm_20260607_143901
+d:\py\mypython\deepstudy\deepstudy-last\train.py:163: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  scaler = torch.cuda.amp.GradScaler() if use_amp else None
+  使用AMP混合精度训练
+
+  训练轮数: 5
+  批大小: 64
+  学习率: 0.001
+  优化器: AdamW
+  设备: cuda (NVIDIA GeForce RTX 4060 Laptop GPU)
+d:\py\mypython\deepstudy\deepstudy-last\train.py:45: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast():
+  Epoch  1/5 | Train Loss: 0.6332 Acc: 67.25% | Val Loss: 0.6221 Acc: 67.63% | Time: 4.6s
+  Epoch  2/5 | Train Loss: 0.6204 Acc: 67.66% | Val Loss: 0.6237 Acc: 67.50% | Time: 4.6s
+  Epoch  3/5 | Train Loss: 0.6090 Acc: 67.52% | Val Loss: 0.6378 Acc: 67.89% | Time: 4.8s
+  Epoch  4/5 | Train Loss: 0.6010 Acc: 67.83% | Val Loss: 0.6261 Acc: 67.69% | Time: 4.8s
+  Epoch  5/5 | Train Loss: 0.5758 Acc: 70.45% | Val Loss: 0.6673 Acc: 58.58% | Time: 4.7s
+
+  GPU显存峰值: 1074.0 MB
+
+  训练完成！最佳验证准确率: 67.89%
+  总训练时间: 23.5s
+
+--- BERT AMP vs FP32 ---
+
+[模型] 加载 BERT: bert-base-uncased
+Loading weights: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 199/199 [00:00<00:00, 5713.29it/s]
+[transformers] BertForSequenceClassification LOAD REPORT from: bert-base-uncased
+Key                                        | Status     | 
+-------------------------------------------+------------+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED | 
+cls.predictions.bias                       | UNEXPECTED | 
+cls.seq_relationship.bias                  | UNEXPECTED | 
+cls.predictions.transform.dense.bias       | UNEXPECTED | 
+cls.predictions.transform.dense.weight     | UNEXPECTED | 
+cls.seq_relationship.weight                | UNEXPECTED | 
+classifier.bias                            | MISSING    | 
+classifier.weight                          | MISSING    | 
+
+Notes:
+- UNEXPECTED:   can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:      those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+  总参数量: 109,483,778
+  可训练参数量: 109,483,778
+  模型大小: 417.65 MB (FP32)
+  隐藏层维度: 768
+  注意力头数: 12
+  Transformer层数: 12
+
+============================================================
+模块3B：BERT Transformer 训练
+============================================================
+  TensorBoard日志: d:\py\mypython\deepstudy\deepstudy-last\runs\bert_20260607_143927
+d:\py\mypython\deepstudy\deepstudy-last\train.py:293: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  scaler = torch.cuda.amp.GradScaler() if use_amp else None
+  使用AMP混合精度训练
+
+  训练轮数: 2
+  批大小: 32
+  学习率: 2e-05
+  Warmup步数: 44/446
+  设备: cuda (NVIDIA GeForce RTX 4060 Laptop GPU)
+  Epoch  1/2 | Train Loss: 0.6212 Acc: 67.08% | Val Loss: 0.5771 Acc: 70.05% | Time: 37.2s
+  Epoch  2/2 | Train Loss: 0.5417 Acc: 72.68% | Val Loss: 0.5650 Acc: 71.17% | Time: 37.3s
+
+  训练完成！最佳验证准确率: 71.17%
+  总训练时间: 74.4s
+  GPU Profile表已保存: d:\py\mypython\deepstudy\deepstudy-last\outputs\gpu_profile_table.png
+
+▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶
+  阶段④：超参数对比实验（≥3组）
+▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶
+
+--- Bi-LSTM 超参数实验 ---
+
+  实验: lr=1e-3_bs64
+
+============================================================
+模块3A：Bi-LSTM 训练
+============================================================
+  TensorBoard日志: d:\py\mypython\deepstudy\deepstudy-last\runs\lstm_20260607_144053
+
+  训练轮数: 8
+  批大小: 64
+  学习率: 0.001
+  优化器: AdamW
+  设备: cuda (NVIDIA GeForce RTX 4060 Laptop GPU)
+  Epoch  1/8 | Train Loss: 0.6338 Acc: 67.60% | Val Loss: 0.6263 Acc: 67.63% | Time: 4.8s
+  Epoch  2/8 | Train Loss: 0.6222 Acc: 67.60% | Val Loss: 0.6271 Acc: 67.76% | Time: 4.8s
+  Epoch  3/8 | Train Loss: 0.6131 Acc: 67.45% | Val Loss: 0.6259 Acc: 67.82% | Time: 4.9s
+  Epoch  4/8 | Train Loss: 0.5987 Acc: 68.08% | Val Loss: 0.6283 Acc: 64.94% | Time: 4.8s
+  Epoch  5/8 | Train Loss: 0.5813 Acc: 69.54% | Val Loss: 0.6284 Acc: 66.25% | Time: 4.9s
+  Epoch  6/8 | Train Loss: 0.5453 Acc: 72.52% | Val Loss: 0.6454 Acc: 62.71% | Time: 4.9s
+  早停于 Epoch 6
+
+  GPU显存峰值: 2058.0 MB
+
+  训练完成！最佳验证准确率: 67.82%
+  总训练时间: 29.1s
+
+  实验: lr=5e-4_bs64
+
+============================================================
+模块3A：Bi-LSTM 训练
+============================================================
+  TensorBoard日志: d:\py\mypython\deepstudy\deepstudy-last\runs\lstm_20260607_144124
+
+  训练轮数: 8
+  批大小: 64
+  学习率: 0.0005
+  优化器: AdamW
+  设备: cuda (NVIDIA GeForce RTX 4060 Laptop GPU)
+  Epoch  1/8 | Train Loss: 0.6335 Acc: 67.62% | Val Loss: 0.6205 Acc: 67.63% | Time: 5.0s
+  Epoch  2/8 | Train Loss: 0.6236 Acc: 67.83% | Val Loss: 0.6201 Acc: 67.63% | Time: 5.2s
+  Epoch  3/8 | Train Loss: 0.6169 Acc: 67.56% | Val Loss: 0.6251 Acc: 68.55% | Time: 5.2s
+  Epoch  4/8 | Train Loss: 0.6072 Acc: 68.02% | Val Loss: 0.6206 Acc: 67.69% | Time: 5.2s
+  Epoch  5/8 | Train Loss: 0.5923 Acc: 68.73% | Val Loss: 0.6266 Acc: 67.50% | Time: 5.2s
+  Epoch  6/8 | Train Loss: 0.5760 Acc: 70.23% | Val Loss: 0.6371 Acc: 64.94% | Time: 5.2s
+  早停于 Epoch 6
+
+  GPU显存峰值: 2058.3 MB
+
+  训练完成！最佳验证准确率: 68.55%
+  总训练时间: 31.0s
+
+  实验: lr=1e-3_bs32_Adam
+
+============================================================
+模块3A：Bi-LSTM 训练
+============================================================
+  TensorBoard日志: d:\py\mypython\deepstudy\deepstudy-last\runs\lstm_20260607_144158
+
+  训练轮数: 8
+  批大小: 32
+  学习率: 0.001
+  优化器: Adam
+  设备: cuda (NVIDIA GeForce RTX 4060 Laptop GPU)
+  Epoch  1/8 | Train Loss: 0.6318 Acc: 67.63% | Val Loss: 0.6323 Acc: 67.76% | Time: 8.7s
+  Epoch  2/8 | Train Loss: 0.6213 Acc: 67.83% | Val Loss: 0.6194 Acc: 67.89% | Time: 8.4s
+  Epoch  3/8 | Train Loss: 0.6057 Acc: 68.60% | Val Loss: 0.6210 Acc: 66.84% | Time: 8.3s
+  Epoch  4/8 | Train Loss: 0.5836 Acc: 69.72% | Val Loss: 0.6253 Acc: 66.25% | Time: 8.3s
+  Epoch  5/8 | Train Loss: 0.5364 Acc: 73.68% | Val Loss: 0.6510 Acc: 65.40% | Time: 8.4s
+  早停于 Epoch 5
+
+  GPU显存峰值: 1987.0 MB
+
+  训练完成！最佳验证准确率: 67.89%
+  总训练时间: 42.1s
+  超参数对比表已保存: d:\py\mypython\deepstudy\deepstudy-last\outputs\lstm_hyperparam_table.png
+
+--- BERT 超参数实验 ---
+
+  实验: lr=2e-5_bs32
+
+[模型] 加载 BERT: bert-base-uncased
+Loading weights: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 199/199 [00:00<00:00, 5220.06it/s]
+[transformers] BertForSequenceClassification LOAD REPORT from: bert-base-uncased
+Key                                        | Status     | 
+-------------------------------------------+------------+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED | 
+cls.predictions.bias                       | UNEXPECTED | 
+cls.seq_relationship.bias                  | UNEXPECTED | 
+cls.predictions.transform.dense.bias       | UNEXPECTED | 
+cls.predictions.transform.dense.weight     | UNEXPECTED | 
+cls.seq_relationship.weight                | UNEXPECTED | 
+classifier.bias                            | MISSING    | 
+classifier.weight                          | MISSING    | 
+
+Notes:
+- UNEXPECTED:   can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:      those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+  总参数量: 109,483,778
+  可训练参数量: 109,483,778
+  模型大小: 417.65 MB (FP32)
+  隐藏层维度: 768
+  注意力头数: 12
+  Transformer层数: 12
+
+============================================================
+模块3B：BERT Transformer 训练
+============================================================
+  TensorBoard日志: d:\py\mypython\deepstudy\deepstudy-last\runs\bert_20260607_144245
+
+  训练轮数: 2
+  批大小: 32
+  学习率: 2e-05
+  Warmup步数: 44/446
+  设备: cuda (NVIDIA GeForce RTX 4060 Laptop GPU)
+  Epoch  1/2 | Train Loss: 0.6181 Acc: 67.38% | Val Loss: 0.5811 Acc: 69.59% | Time: 74.3s
+  Epoch  2/2 | Train Loss: 0.5343 Acc: 73.74% | Val Loss: 0.5817 Acc: 70.05% | Time: 74.3s
+
+  训练完成！最佳验证准确率: 70.05%
+  总训练时间: 148.6s
+
+  实验: lr=3e-5_bs16
+
+[模型] 加载 BERT: bert-base-uncased
+Loading weights: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 199/199 [00:00<00:00, 4790.93it/s]
+[transformers] BertForSequenceClassification LOAD REPORT from: bert-base-uncased
+Key                                        | Status     | 
+-------------------------------------------+------------+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED | 
+cls.predictions.bias                       | UNEXPECTED | 
+cls.seq_relationship.bias                  | UNEXPECTED | 
+cls.predictions.transform.dense.bias       | UNEXPECTED | 
+cls.predictions.transform.dense.weight     | UNEXPECTED | 
+cls.seq_relationship.weight                | UNEXPECTED | 
+classifier.bias                            | MISSING    | 
+classifier.weight                          | MISSING    | 
+
+Notes:
+- UNEXPECTED:   can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:      those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+  总参数量: 109,483,778
+  可训练参数量: 109,483,778
+  模型大小: 417.65 MB (FP32)
+  隐藏层维度: 768
+  注意力头数: 12
+  Transformer层数: 12
+
+============================================================
+模块3B：BERT Transformer 训练
+============================================================
+  TensorBoard日志: d:\py\mypython\deepstudy\deepstudy-last\runs\bert_20260607_144528
+
+  训练轮数: 2
+  批大小: 16
+  学习率: 3e-05
+  Warmup步数: 89/892
+  设备: cuda (NVIDIA GeForce RTX 4060 Laptop GPU)
+  Epoch  1/2 | Train Loss: 0.6113 Acc: 67.81% | Val Loss: 0.6065 Acc: 67.69% | Time: 83.7s
+  Epoch  2/2 | Train Loss: 0.4973 Acc: 76.45% | Val Loss: 0.5889 Acc: 70.12% | Time: 83.4s
+
+  训练完成！最佳验证准确率: 70.12%
+  总训练时间: 167.1s
+
+  实验: lr=2e-5_bs16
+
+[模型] 加载 BERT: bert-base-uncased
+Loading weights: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 199/199 [00:00<00:00, 5986.88it/s]
+[transformers] BertForSequenceClassification LOAD REPORT from: bert-base-uncased
+Key                                        | Status     | 
+-------------------------------------------+------------+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED | 
+cls.predictions.bias                       | UNEXPECTED | 
+cls.seq_relationship.bias                  | UNEXPECTED | 
+cls.predictions.transform.dense.bias       | UNEXPECTED | 
+cls.predictions.transform.dense.weight     | UNEXPECTED | 
+cls.seq_relationship.weight                | UNEXPECTED | 
+classifier.bias                            | MISSING    | 
+classifier.weight                          | MISSING    | 
+
+Notes:
+- UNEXPECTED:   can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:      those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+  总参数量: 109,483,778
+  可训练参数量: 109,483,778
+  模型大小: 417.65 MB (FP32)
+  隐藏层维度: 768
+  注意力头数: 12
+  Transformer层数: 12
+
+============================================================
+模块3B：BERT Transformer 训练
+============================================================
+  TensorBoard日志: d:\py\mypython\deepstudy\deepstudy-last\runs\bert_20260607_144827
+
+  训练轮数: 2
+  批大小: 16
+  学习率: 2e-05
+  Warmup步数: 89/892
+  设备: cuda (NVIDIA GeForce RTX 4060 Laptop GPU)
+  Epoch  1/2 | Train Loss: 0.6123 Acc: 67.84% | Val Loss: 0.5800 Acc: 71.63% | Time: 83.9s
+  Epoch  2/2 | Train Loss: 0.5057 Acc: 75.70% | Val Loss: 0.5879 Acc: 70.84% | Time: 85.0s
+
+  训练完成！最佳验证准确率: 71.63%
+  总训练时间: 168.9s
+  超参数对比表已保存: d:\py\mypython\deepstudy\deepstudy-last\outputs\bert_hyperparam_table.png
+
+▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶
+  阶段⑤：测试集评估与可视化
+▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶
+
+[模型] 加载 BERT: bert-base-uncased
+Loading weights: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 199/199 [00:00<00:00, 5328.94it/s]
+[transformers] BertForSequenceClassification LOAD REPORT from: bert-base-uncased
+Key                                        | Status     | 
+-------------------------------------------+------------+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED | 
+cls.predictions.bias                       | UNEXPECTED | 
+cls.seq_relationship.bias                  | UNEXPECTED | 
+cls.predictions.transform.dense.bias       | UNEXPECTED | 
+cls.predictions.transform.dense.weight     | UNEXPECTED | 
+cls.seq_relationship.weight                | UNEXPECTED | 
+classifier.bias                            | MISSING    | 
+classifier.weight                          | MISSING    | 
+
+Notes:
+- UNEXPECTED:   can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:      those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+  总参数量: 109,483,778
+  可训练参数量: 109,483,778
+  模型大小: 417.65 MB (FP32)
+  隐藏层维度: 768
+  注意力头数: 12
+  Transformer层数: 12
+
+[评估] 测试集评估 (Bi-LSTM)
+  准确率: 67.47%
+  精确率: 47.73%
+  召回率: 4.24%
+  F1值: 7.79%
+
+  分类报告:
+              precision    recall  f1-score   support
+
+          负面       0.68      0.98      0.80      1033
+          正面       0.48      0.04      0.08       495
+
+    accuracy                           0.67      1528
+   macro avg       0.58      0.51      0.44      1528
+weighted avg       0.61      0.67      0.57      1528
+
+
+[评估] 测试集评估 (BERT)
+  准确率: 69.57%
+  精确率: 60.71%
+  召回率: 17.17%
+  F1值: 26.77%
+
+  分类报告:
+              precision    recall  f1-score   support
+
+          负面       0.70      0.95      0.81      1033
+          正面       0.61      0.17      0.27       495
+
+    accuracy                           0.70      1528
+   macro avg       0.66      0.56      0.54      1528
+weighted avg       0.67      0.70      0.63      1528
+
+  混淆矩阵已保存: d:\py\mypython\deepstudy\deepstudy-last\outputs\confusion_matrix_Bi-LSTM.png
+  混淆矩阵已保存: d:\py\mypython\deepstudy\deepstudy-last\outputs\confusion_matrix_BERT.png
+  训练对比图已保存: d:\py\mypython\deepstudy\deepstudy-last\outputs\training_comparison.png
+  注意力热力图跳过: 'BertConfig' object has no attribute 'attn_implementation'
+  注意力热力图跳过: 'BertConfig' object has no attribute 'attn_implementation'
+  最终对比表已保存: d:\py\mypython\deepstudy\deepstudy-last\outputs\final_comparison.png
+
+▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶
+  阶段⑥：实验报告生成
+▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶▶
+
+  实验报告已保存: d:\py\mypython\deepstudy\deepstudy-last\outputs\experiment_report.txt
+
+======================================================================
+        深度学习期末综合实践 - 方向二 实验报告
+        融合LSTM与Transformer/BERT的序列系统
+======================================================================
+
+一、实验概述
+  任务：电影简介情感分析（二分类）
+  数据集：IMDB Movies (10178条)
+  硬件：NVIDIA GeForce RTX 4060 Laptop GPU
+  框架：PyTorch + HuggingFace Transformers
+
+二、模型对比结果
+  指标                   Bi-LSTM              BERT                
+  ------------------------------------------------------------
+  测试集准确率               67.47                69.57               
+  测试集精确率               47.73                60.71               
+  测试集召回率               4.24                 17.17               
+  测试集F1值               7.79                 26.77               
+  最佳验证准确率              67.82                70.45               
+
+三、训练效率对比
+  指标                   Bi-LSTM              BERT                
+  ------------------------------------------------------------
+  总训练时间(s)             22.2                 222.9               
+  平均每Epoch(s)          5.5                  74.3                
+  显存峰值(MB)             264.6                3853.1              
+
+四、AMP混合精度对比
+  LSTM FP32 vs AMP: 显存 264.6MB vs 1074.0MB
+  BERT FP32 vs AMP: 显存 3853.1MB vs 4021.2MB
+
+五、分析与结论
+  (1) BERT作为预训练模型，在文本分类任务上通常优于Bi-LSTM，
+      因为它通过大规模语料预训练获得了丰富的语言知识。
+  (2) Bi-LSTM训练速度更快，参数量更少，适合资源受限场景。
+  (3) AMP混合精度训练可以在几乎不损失精度的情况下显著减少
+      显存占用和训练时间。
+  (4) 学习率调度策略（Warmup + Cosine Decay）对BERT微调至关重要。
+
+报告生成时间: 2026-06-07 14:51:38
+======================================================================
+
+
+======================================================================
+  实验全部完成！
+======================================================================
+
+  输出目录: d:\py\mypython\deepstudy\deepstudy-last\outputs
+  TensorBoard: tensorboard --logdir=d:\py\mypython\deepstudy\deepstudy-last\runs
+  Checkpoint: d:\py\mypython\deepstudy\deepstudy-last\checkpoints
+
+  生成的文件:
+    - bert_hyperparam_table.png
+    - class_distribution.png
+    - confusion_matrix_BERT.png
+    - confusion_matrix_Bi-LSTM.png
+    - experiment_report.txt
+    - final_comparison.png
+    - gpu_profile_table.png
+    - lstm_hyperparam_table.png
+    - training_comparison.png
+PS D:\py\mypython\deepstudy> 

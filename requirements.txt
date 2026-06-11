@@ -1,0 +1,9 @@
+torch>=2.0
+transformers>=4.30
+numpy
+pandas
+matplotlib
+seaborn
+scikit-learn
+tensorboard
+tqdm
