@@ -6,8 +6,7 @@ dist/
 build/
 *.egg
 
-# Model checkpoints (too large for GitHub)
-checkpoints/
+# Large archives
 checkpoints.zip
 
 # TensorBoard logs
